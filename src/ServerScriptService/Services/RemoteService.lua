@@ -6,6 +6,11 @@ local names = {
 	"RoundStateChanged", "CountdownUpdated", "RankingUpdated",
 	"PlayerFinished", "ResultsUpdated", "ClientReady", "PlayerProgressUpdated",
 	"ItemGranted", "ItemUsed", "ItemEffect", "UseItem", "TrackPenaltyUpdated", "ItemMessage",
+	"SelectMode", "LeaveQueue", "QueueUpdated", "ModeStateChanged", "ReturnToLobby",
+	"TowerProgressUpdated", "RankUpdated", "OpenMenu",
+	"RequestProfile", "ProfileUpdated", "RequestShopCatalog", "ShopCatalogUpdated",
+	"PurchaseWithCoins", "EquipCosmetic", "UnequipCosmetic", "RequestGamePassPurchase",
+	"RequestProductPurchase", "PurchaseResult", "OpenShop", "LeaderboardUpdated", "ClaimDailyReward",
 }
 
 function RemoteService.Ensure(): {[string]: RemoteEvent}

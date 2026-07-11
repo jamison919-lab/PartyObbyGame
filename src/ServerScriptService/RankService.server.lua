@@ -1,0 +1,2 @@
+--!strict
+-- Rank calculations are invoked by GameRound through the shared RankService module.

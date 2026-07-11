@@ -1,0 +1,29 @@
+--!strict
+if workspace:FindFirstChild("PartyObbyWorld") then return end
+local world=Instance.new("Folder");world.Name="PartyObbyWorld";world.Parent=workspace
+local lobby=Instance.new("Folder");lobby.Name="MainLobby";lobby.Parent=world
+local raceMaps=Instance.new("Folder");raceMaps.Name="RaceMaps";raceMaps.Parent=world
+local raceReference=Instance.new("Folder");raceReference.Name="VillageRace01";raceReference:SetAttribute("RuntimeMapName","PartyObbyMap");raceReference.Parent=raceMaps
+local towerMaps=Instance.new("Folder");towerMaps.Name="TowerMaps";towerMaps.Parent=world
+local runtime=Instance.new("Folder");runtime.Name="Runtime";runtime.Parent=world;for _,n in {"ActiveMatches","ActiveItems","TemporaryEffects"} do local f=Instance.new("Folder");f.Name=n;f.Parent=runtime end
+local function part(name:string,size:Vector3,position:Vector3,color:Color3,parent:Instance?,collide:boolean?):Part local p=Instance.new("Part");p.Name=name;p.Size=size;p.Position=position;p.Color=color;p.Anchored=true;p.CanCollide=collide~=false;p.Parent=parent or lobby;return p end
+local function label(p:BasePart,text:string) local g=Instance.new("BillboardGui");g.Size=UDim2.fromScale(7,1.5);g.StudsOffset=Vector3.new(0,4,0);g.AlwaysOnTop=true;g.Parent=p;local t=Instance.new("TextLabel");t.Size=UDim2.fromScale(1,1);t.BackgroundTransparency=1;t.Text=text;t.TextScaled=true;t.TextColor3=Color3.new(1,1,1);t.TextStrokeTransparency=.2;t.Font=Enum.Font.GothamBold;t.Parent=g end
+local center=Vector3.new(-300,5,0);local plaza=part("Plaza",Vector3.new(100,1,100),center,Color3.fromRGB(190,170,130));plaza.Material=Enum.Material.Cobblestone
+local spawn=part("LobbySpawn",Vector3.new(12,1,12),center+Vector3.new(0,1,-30),Color3.fromRGB(75,210,130));label(spawn,"爆笑村莊廣場")
+local receive=part("ReturnReceiver",Vector3.new(18,1,12),center+Vector3.new(0,1,-40),Color3.fromRGB(90,180,255));receive.Transparency=.4
+local decor=Instance.new("Folder");decor.Name="Decorations";decor.Parent=lobby
+local fountain=part("VillageFountain",Vector3.new(14,3,14),center+Vector3.new(0,2,0),Color3.fromRGB(80,175,240),decor);fountain.Shape=Enum.PartType.Cylinder
+local portalData={{"CasualRacePortal","多人休閒競速\n2～8 人・派對道具",-30,"CasualRace"},{"RankedRacePortal","多人排位競速\n影響逃亡積分",0,"RankedRace"},{"SoloTowerPortal","單人爬塔\n失控村莊瞭望塔",30,"SoloTower"}}
+for _,d in portalData do local p=part(d[1],Vector3.new(18,10,3),center+Vector3.new(d[3],5,28),d[4]=="RankedRace" and Color3.fromRGB(245,185,55) or Color3.fromRGB(100,190,245));p.Material=Enum.Material.Neon;label(p,d[2]);p:SetAttribute("ModeId",d[4]);local prompt=Instance.new("ProximityPrompt");prompt.ActionText="選擇模式";prompt.ObjectText=d[2];prompt.HoldDuration=.2;prompt.MaxActivationDistance=12;prompt.Parent=p end
+for i,d in ipairs({{"ShopPortal","商店即將開放"},{"RankDisplay","牌位展示區"},{"DailyQuestArea","每日任務・即將開放"},{"PracticeArea","練習區"}}) do local p=part(d[1],Vector3.new(12,7,3),center+Vector3.new(-45+(i-1)*30,4,-5),Color3.fromRGB(150,105,70));label(p,d[2]) end
+for i=1,8 do local prop=part("VillageProp"..i,Vector3.new(3,4,3),center+Vector3.new(-45+(i%4)*30,2,-45+math.floor(i/4)*85),i%2==0 and Color3.fromRGB(235,185,60) or Color3.fromRGB(125,75,40),decor,false);prop:SetAttribute("DecorativeObject",true) end
+local tower=Instance.new("Folder");tower.Name="Tower01";tower.Parent=towerMaps
+local base=Vector3.new(300,5,0);local towerStart=part("TowerStart",Vector3.new(16,1,16),base,Color3.fromRGB(80,200,130),tower);label(towerStart,"失控村莊瞭望塔")
+local checkpoints=Instance.new("Folder");checkpoints.Name="Floors";checkpoints.Parent=tower
+for i=1,10 do local target=base+Vector3.new((i%2==0 and 8 or -8),i*10,0);local floor=part(string.format("Floor%02d",i),Vector3.new(14-(i%3)*2,1,14-(i%2)*3),target,Color3.fromHSV(i/10,.7,1),checkpoints);floor:SetAttribute("TowerFloor",i);if i==2 or i==9 then floor:SetAttribute("MovingPlatform",true) elseif i==4 then floor:SetAttribute("DisappearPlatform",true) elseif i==6 then floor:SetAttribute("PushBoxPuzzle",true) elseif i==7 then floor:SetAttribute("SequencePuzzle",true) end;local previous=if i==1 then base else base+Vector3.new(((i-1)%2==0 and 8 or -8),(i-1)*10,0);for step=1,2 do local alpha=step/3;part(string.format("Step%02d_%d",i,step),Vector3.new(5,1,5),previous:Lerp(target,alpha),Color3.fromRGB(185,145,95),tower) end end
+local puzzles=Instance.new("Folder");puzzles.Name="Puzzles";puzzles.Parent=tower
+local box=part("PushBox",Vector3.new(4,4,4),base+Vector3.new(-8,63,0),Color3.fromRGB(135,85,45),puzzles);box.Anchored=false;local plate=part("PressurePlate",Vector3.new(6,.5,6),base+Vector3.new(3,60.8,0),Color3.fromRGB(80,210,100),puzzles);plate:SetAttribute("Puzzle","PushBox");local door=part("PuzzleDoor06",Vector3.new(12,10,1),base+Vector3.new(0,66,8),Color3.fromRGB(175,75,55),puzzles)
+local reset=part("ResetPuzzle",Vector3.new(4,4,2),base+Vector3.new(-14,63,0),Color3.fromRGB(220,85,70),puzzles);local resetPrompt=Instance.new("ProximityPrompt");resetPrompt.ActionText="重置木箱";resetPrompt.ObjectText="推箱機關";resetPrompt.Parent=reset
+local buttons=Instance.new("Folder");buttons.Name="SequenceButtons";buttons.Parent=puzzles;for i=1,3 do local b=part("Button"..i,Vector3.new(3,.5,3),base+Vector3.new(-6+i*6,70.8,-3),Color3.fromRGB(245,185,55),buttons);b:SetAttribute("SequenceIndex",i) end;part("PuzzleDoor07",Vector3.new(12,10,1),base+Vector3.new(0,76,8),Color3.fromRGB(175,75,55),puzzles)
+local finish=part("TowerFinish",Vector3.new(16,1,16),base+Vector3.new(0,112,0),Color3.fromRGB(255,220,60),tower);label(finish,"TOWER FINISH")
+part("KillFloor",Vector3.new(90,1,90),base+Vector3.new(0,-15,0),Color3.fromRGB(220,65,65),tower)

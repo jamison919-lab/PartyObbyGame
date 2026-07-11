@@ -1,0 +1,6 @@
+--!strict
+local Players=game:GetService("Players");local Lobby=require(script.Parent.Services.LobbyService);local Mode=require(script.Parent.Services.ModeService);local Profiles=require(script.Parent.Services.PlayerProfileService);local Rank=require(script.Parent.Services.RankService);local remotes=require(script.Parent.Services.RemoteService).Ensure();local rate:{[Player]:number}={}
+local function sendRank(p:Player) local profile=Profiles.GetProfile(p);if not profile then return end;local points=profile.RankedRace.RankPoints;local tier=Rank.Resolve(points);remotes.RankUpdated:FireClient(p,{points=points,displayName=Rank.Display(points),wins=profile.RankedRace.RankedWins,nextPoints=tier.MinimumPoints+100}) end
+local function added(p:Player) Mode.Get(p);task.delay(.5,function() if p.Parent==Players then Lobby.Return(p);sendRank(p) end end) end
+Players.PlayerAdded:Connect(added);for _,p in Players:GetPlayers() do added(p) end
+remotes.ReturnToLobby.OnServerEvent:Connect(function(p) if os.clock()-(rate[p] or 0)<1 then return end;rate[p]=os.clock();local s=Mode.Get(p);if s.CurrentMode=="RankedRace" and s.IsInMatch then Profiles.IncrementValue(p,"RankedRace.AbandonCount",1);local profile=Profiles.GetProfile(p);if profile then Profiles.UpdateValue(p,"RankedRace.RankPoints",math.max(0,profile.RankedRace.RankPoints-10)) end end;Lobby.Return(p);sendRank(p) end)

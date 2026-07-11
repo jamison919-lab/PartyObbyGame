@@ -5,6 +5,7 @@ local player=Players.LocalPlayer
 print("[RaceUI] client started")
 local old=player.PlayerGui:FindFirstChild("RaceGui"); if old then old:Destroy() end
 local gui=Instance.new("ScreenGui"); gui.Name="RaceGui"; gui.ResetOnSpawn=false; gui.IgnoreGuiInset=false; gui.Parent=player.PlayerGui
+gui.Enabled=false
 local function panel(name:string,pos:UDim2,size:UDim2): Frame local f=Instance.new("Frame"); f.Name=name; f.Position=pos; f.Size=size; f.BackgroundColor3=Color3.fromRGB(18,24,38); f.BackgroundTransparency=.18; f.Parent=gui; local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(.08,0); c.Parent=f; local s=Instance.new("UIStroke"); s.Color=Color3.fromRGB(98,210,255); s.Transparency=.35; s.Parent=f; return f end
 local function text(parent:Instance,name:string,value:string,pos:UDim2,size:UDim2,scaled:boolean?):TextLabel local t=Instance.new("TextLabel"); t.Name=name;t.Text=value;t.Position=pos;t.Size=size;t.BackgroundTransparency=1;t.TextColor3=Color3.new(1,1,1);t.Font=Enum.Font.GothamBold;t.TextScaled=scaled~=false;t.TextXAlignment=Enum.TextXAlignment.Left;t.Parent=parent;return t end
 local status=panel("Status",UDim2.fromScale(.025,.04),UDim2.fromScale(.28,.12)); local stateText=text(status,"State","正在連線伺服器…",UDim2.fromScale(.05,.08),UDim2.fromScale(.9,.42)); local timeText=text(status,"Time","",UDim2.fromScale(.05,.54),UDim2.fromScale(.9,.3))
@@ -27,6 +28,8 @@ local resultsUpdated=remote("ResultsUpdated")
 local clientReady=remote("ClientReady")
 local playerProgressUpdated=remote("PlayerProgressUpdated")
 print("[RaceUI] remotes found")
+local modeState=remote("ModeStateChanged")
+modeState.OnClientEvent:Connect(function(data) gui.Enabled=data.inMatch==true or data.mode=="CasualRace" or data.mode=="RankedRace" end)
 local lastState=""
 roundStateChanged.OnClientEvent:Connect(function(d)
 	stateText.Text=d.message or d.state; timeText.Text=(d.timeRemaining and d.timeRemaining>0) and ("剩餘 "..d.timeRemaining.." 秒") or ""

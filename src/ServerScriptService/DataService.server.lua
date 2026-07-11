@@ -1,0 +1,10 @@
+--!strict
+local Players=game:GetService("Players");local ReplicatedStorage=game:GetService("ReplicatedStorage");local Config=require(ReplicatedStorage.Modules.DataConfig);local Profiles=require(script.Parent.Services.PlayerProfileService);local remotes=require(script.Parent.Services.RemoteService).Ensure()
+local function send(p:Player) local snapshot=Profiles.GetPublicProfileSnapshot(p);if snapshot then remotes.ProfileUpdated:FireClient(p,snapshot) end end
+local function load(p:Player) local ok,err=Profiles.LoadProfile(p);if ok then require(script.Parent.Services.CosmeticService).Apply(p);local profile=Profiles.GetProfile(p);if profile then local boards=require(script.Parent.Services.GlobalLeaderboardService);boards.Update(p,"Rank",profile.RankedRace.RankPoints);boards.Update(p,"Wins",profile.General.Wins);local tower=profile.Tower.BestTowerTimes.Tower01 or 0;if tower>0 then boards.Update(p,"Tower",tower)end end;send(p) else warn(string.format("[Data] failed to load %s: %s",p.Name,tostring(err)));remotes.ProfileUpdated:FireClient(p,{loadFailed=true,message="資料暫時無法載入"}) end end
+Players.PlayerAdded:Connect(function(p)task.spawn(load,p)end);for _,p in Players:GetPlayers() do task.spawn(load,p) end
+Profiles.Changed.Event:Connect(function(p)send(p)end)
+local requestTimes:{[Player]:number}={};remotes.RequestProfile.OnServerEvent:Connect(function(p)local now=os.clock();if now-(requestTimes[p]or 0)<.25 then return end;requestTimes[p]=now;send(p)end)
+Players.PlayerRemoving:Connect(function(p)requestTimes[p]=nil;Profiles.ReleaseProfile(p)end)
+task.spawn(function()while task.wait(Config.AutoSaveInterval) do for _,p in Players:GetPlayers() do if Profiles.IsProfileLoaded(p) then Profiles.SaveProfile(p,"autosave") end end end end)
+game:BindToClose(function()local pending=0;for _,p in Players:GetPlayers() do if Profiles.IsProfileLoaded(p) then pending+=1;task.spawn(function()Profiles.SaveProfile(p,"BindToClose",true);pending-=1 end) end end;local deadline=os.clock()+25;while pending>0 and os.clock()<deadline do task.wait(.1) end end)

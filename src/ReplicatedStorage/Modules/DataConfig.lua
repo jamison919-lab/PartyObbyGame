@@ -1,0 +1,2 @@
+--!strict
+return table.freeze({DataStoreName="PartyObbyPlayerData_v1",OrderedRankStoreName="PartyObbyRankPoints_v1",OrderedWinsStoreName="PartyObbyWins_v1",OrderedTowerStoreName="PartyObbyTower01BestTime_v1",AutoSaveInterval=120,SaveRetryCount=4,RetryBaseDelay=2,SessionLockTimeout=300,ProfileLoadTimeout=20,StudioMemoryFallback=true,ForceMemoryModeInStudio=true,EnableOrderedDataStores=true,EnableOrderedDataStoresInStudio=false})

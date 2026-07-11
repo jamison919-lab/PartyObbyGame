@@ -1,0 +1,2 @@
+--!strict
+-- Mode authority lives in Services/ModeService.lua; this script reserves the public service entrypoint.
