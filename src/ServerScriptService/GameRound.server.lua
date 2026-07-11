@@ -7,6 +7,7 @@ local States = require(ReplicatedStorage.Modules.RoundConfig)
 local RankingUtils = require(ReplicatedStorage.Modules.RankingUtils)
 local Race = require(script.Parent.Services.RaceService)
 local RemoteService = require(script.Parent.Services.RemoteService)
+local ItemService = require(script.Parent.Services.ItemService)
 
 local timeout = Config.ObjectWaitTimeout
 print("[Round] GameRound started")
@@ -82,6 +83,8 @@ Race.AllRacersFinished.Event:Connect(function() if Race.State==States.Racing the
 
 local function selectRacers(): {Player}
 	if not starts then return {} end
+	local direction=map and map:FindFirstChild("StartDirection"); if not direction and checkpoints then direction=checkpoints:FindFirstChild("Checkpoint01") end
+	local facingTarget=if direction and direction:IsA("BasePart") then direction else nil
 	local selected={}
 	for _,player in Players:GetPlayers() do
 		if #selected>=Config.MaxPlayers then break end
@@ -89,13 +92,13 @@ local function selectRacers(): {Player}
 		local spawn=starts:FindFirstChild(string.format("StartSpawn%02d",#selected+1))
 		if character and humanoid and root and spawn and spawn:IsA("BasePart") then
 			table.insert(selected,player); Race.Add(player,#selected,spawn.CFrame)
-			if not Race.Teleport(player,spawn.CFrame,Config.CharacterWaitTimeout) then warn(string.format("[Round] cannot start: no valid character for %s",player.Name)); Race.Remove(player); table.remove(selected) else Race.Lock(player,true) end
+			if not Race.TeleportFacing(player,spawn,facingTarget,Config.CharacterWaitTimeout) then warn(string.format("[Round] cannot start: no valid character for %s",player.Name)); Race.Remove(player); table.remove(selected) else Race.Lock(player,true); print(string.format("[Round] teleported %s to %s facing track",player.Name,spawn.Name)) end
 		else warn(string.format("[Round] cannot start: no valid character for %s",player.Name)) end
 	end
 	local names={}; for _,p in selected do table.insert(names,p.Name) end; print("[Round] selected racers: "..table.concat(names,", "))
 	return selected
 end
-local function sendLobby(player: Player) if map then local spawn=map:FindFirstChild("LobbySpawn"); if spawn and spawn:IsA("BasePart") then Race.Teleport(player,spawn.CFrame,Config.CharacterWaitTimeout) end end end
+local function sendLobby(player: Player) if map then local spawn=map:FindFirstChild("LobbySpawn"); local target=map:FindFirstChild("StartDirection"); if not target and checkpoints then target=checkpoints:FindFirstChild("Checkpoint01") end; if spawn and spawn:IsA("BasePart") then Race.TeleportFacing(player,spawn,if target and target:IsA("BasePart") then target else nil,Config.CharacterWaitTimeout) end end end
 
 while true do
 	if not resolveMap() then announce(States.WaitingForPlayers,"等待地圖建立",0); task.wait(2); continue end
@@ -106,15 +109,16 @@ while true do
 		task.wait(1)
 	end
 	print(string.format("[Round] valid players: %d/%d, starting intermission",#Players:GetPlayers(),requiredPlayers())); lastWaitingCount=-1
-	if not timer(States.Intermission,"下一局即將開始",Config.LobbyWaitTime) then continue end
-	Race.RoundNumber+=1; Race.Clear(); local selected=selectRacers()
+	if not timer(States.Intermission,"下一局即將開始",Config.IntermissionDuration) then continue end
+	print("[Round] intermission complete"); announce(States.Preparing,"準備起跑",0); print("[Round] preparing racers")
+	ItemService.ClearAll(); Race.RoundNumber+=1; Race.Clear(); local selected=selectRacers()
 	if #selected<requiredPlayers() then warn("[Round] cannot start: not enough valid characters"); Race.Clear(); task.wait(1); continue end
-	timer(States.Preparing,"準備起跑",Config.PrepareTime)
+	task.wait(Config.PreparingDuration)
 	local barrier=map and map:FindFirstChild("StartBarrier"); if barrier and barrier:IsA("BasePart") then barrier.CanCollide=true; barrier.Transparency=.25 end
-	timer(States.Countdown,"倒數",Config.CountdownTime)
+	print("[Round] countdown started"); timer(States.Countdown,"倒數",Config.CountdownDuration)
 	if barrier and barrier:IsA("BasePart") then barrier.CanCollide=false; barrier.Transparency=.8 end
-	local started=os.clock(); for player,data in Race.All() do data.StartTime=started; data.IsRacing=true; Race.Lock(player,false) end
-	roundShouldEnd=false; announce(States.Racing,"GO!",Config.RoundTime); countdownRemote:FireAllClients("GO",States.Racing)
+	local started=os.clock(); for _,data in Race.All() do data.StartTime=started; data.IsRacing=true end
+	roundShouldEnd=false; announce(States.Racing,"GO!",Config.RoundTime); for player in Race.All() do Race.Lock(player,false) end; countdownRemote:FireAllClients("GO",States.Racing); print("[Round] GO - racing started")
 	local deadline=os.clock()+Config.RoundTime; local lastSecond=-1
 	while os.clock()<deadline and Race.ValidCount()>0 and not roundShouldEnd and not Race.AllFinished() do
 		local remaining=math.max(0,math.ceil(deadline-os.clock())); if remaining~=lastSecond then Race.SetState(States.Racing,"比賽中",remaining); roundRemote:FireAllClients(Race.StatePayload()); lastSecond=remaining end
@@ -126,6 +130,6 @@ while true do
 		local stats=data.Player:FindFirstChild("leaderstats"); if stats then local rounds=stats:FindFirstChild("RoundsPlayed") :: IntValue?; if rounds then rounds.Value+=1 end; if data.IsFinished and data.FinishPlace==1 then winner=data.Player end; local best=stats:FindFirstChild("BestTime") :: NumberValue?; if best and data.FinishTime and (best.Value==0 or data.FinishTime<best.Value) then best.Value=data.FinishTime end end
 	end
 	if winner then local stats=winner:FindFirstChild("leaderstats"); local wins=stats and stats:FindFirstChild("Wins") :: IntValue?; if wins then wins.Value+=1 end end
-	announce(States.Results,"本局結果",Config.ResultsTime); resultsRemote:FireAllClients(results); task.wait(Config.ResultsTime)
-	announce(States.Resetting,"返回大廳",Config.BetweenRoundsTime); for _,player in Players:GetPlayers() do sendLobby(player) end; Race.Clear(); if barrier and barrier:IsA("BasePart") then barrier.CanCollide=true; barrier.Transparency=.25 end; task.wait(Config.BetweenRoundsTime)
+	announce(States.Results,"本局結果",Config.ResultsDuration); resultsRemote:FireAllClients(results); task.wait(Config.ResultsDuration)
+	announce(States.Resetting,"返回大廳",Config.ResetDuration); ItemService.ClearAll(); for _,player in Players:GetPlayers() do sendLobby(player) end; Race.Clear(); if barrier and barrier:IsA("BasePart") then barrier.CanCollide=true; barrier.Transparency=.25 end; task.wait(Config.ResetDuration)
 end

@@ -5,6 +5,7 @@ local RemoteService = {}
 local names = {
 	"RoundStateChanged", "CountdownUpdated", "RankingUpdated",
 	"PlayerFinished", "ResultsUpdated", "ClientReady", "PlayerProgressUpdated",
+	"ItemGranted", "ItemUsed", "ItemEffect", "UseItem", "TrackPenaltyUpdated", "ItemMessage",
 }
 
 function RemoteService.Ensure(): {[string]: RemoteEvent}

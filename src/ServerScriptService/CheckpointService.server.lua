@@ -5,6 +5,7 @@ local Config = require(ReplicatedStorage.Modules.GameConfig)
 local CheckpointConfig = require(ReplicatedStorage.Modules.CheckpointConfig)
 local Race = require(script.Parent.Services.RaceService)
 local remotes = require(script.Parent.Services.RemoteService).Ensure()
+local ItemService = require(script.Parent.Services.ItemService)
 
 local map = workspace:WaitForChild("PartyObbyMap")
 local checkpoints = map:WaitForChild("Checkpoints")
@@ -26,6 +27,7 @@ local function restore(player: Player)
 	local data = Race.Get(player)
 	if not data or not data.IsRacing or respawnCooldown[player] then return end
 	respawnCooldown[player] = true
+	ItemService.ClearEffects(player)
 	if data.LastValidCFrame then Race.Teleport(player, data.LastValidCFrame) end
 	local character = player.Character
 	if character then

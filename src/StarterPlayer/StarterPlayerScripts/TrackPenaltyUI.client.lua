@@ -1,0 +1,6 @@
+--!strict
+local Players=game:GetService("Players"); local ReplicatedStorage=game:GetService("ReplicatedStorage"); local player=Players.LocalPlayer
+local folder=ReplicatedStorage:WaitForChild("Remotes",10); if not folder then return end; local remote=folder:WaitForChild("TrackPenaltyUpdated",10); if not remote or not remote:IsA("RemoteEvent") then return end
+local gui=Instance.new("ScreenGui"); gui.Name="TrackPenaltyGui"; gui.ResetOnSpawn=false; gui.Parent=player.PlayerGui
+local label=Instance.new("TextLabel"); label.Position=UDim2.fromScale(.36,.16); label.Size=UDim2.fromScale(.28,.07); label.BackgroundColor3=Color3.fromRGB(110,55,25); label.BackgroundTransparency=.2; label.TextColor3=Color3.new(1,1,1); label.TextScaled=true; label.Font=Enum.Font.GothamBold; label.Visible=false; label.Parent=gui; Instance.new("UICorner",label).CornerRadius=UDim.new(.2,0)
+local token=0; remote.OnClientEvent:Connect(function(data) token+=1; local mine=token; if not data.active then label.Text="速度恢復"; label.Visible=true; task.delay(1.2,function() if token==mine then label.Visible=false end end); return end; label.Visible=true; task.spawn(function() while token==mine do local remaining=math.max(0,data.expiresAt-workspace:GetServerTimeNow()); label.Text=string.format("離開跑道！減速 %.1f 秒",remaining); if remaining<=0 then break end; task.wait(.1) end end) end)

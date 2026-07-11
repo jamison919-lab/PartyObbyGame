@@ -9,6 +9,10 @@ export type RaceData = {
 	FinishTime: number?, StartTime: number, LastValidCFrame: CFrame?, HasFinished: boolean,
 	IsEliminated: boolean, SpawnIndex: number, ProgressReachedAt: number,
 	OriginalWalkSpeed: number?, OriginalJumpPower: number?, OriginalJumpHeight: number?,
+	HeldItemId:string?, LastItemId:string?, ItemGrantedAt:number, ItemCooldownUntil:number,
+	ShieldActive:boolean, ShieldExpiresAt:number, SpringJumpActive:boolean, BoostExpiresAt:number,
+	ActiveEffects:{[string]:boolean}, LastItemUseAt:number, ControlImmuneUntil:number,
+	OriginalAutoRotate:boolean?,
 }
 
 local Service = {
@@ -40,17 +44,21 @@ function Service.Add(player: Player, spawnIndex: number, spawnCFrame: CFrame)
 	records[player] = { UserId=player.UserId, Player=player, IsRacing=false, IsFinished=false,
 		CurrentCheckpoint=0, SegmentProgress=0, FinishPlace=nil, FinishTime=nil, StartTime=0,
 		LastValidCFrame=spawnCFrame, HasFinished=false, IsEliminated=false, SpawnIndex=spawnIndex,
-		ProgressReachedAt=os.clock(), OriginalWalkSpeed=nil, OriginalJumpPower=nil, OriginalJumpHeight=nil }
+		ProgressReachedAt=os.clock(), OriginalWalkSpeed=nil, OriginalJumpPower=nil, OriginalJumpHeight=nil,
+		HeldItemId=nil, LastItemId=nil, ItemGrantedAt=0, ItemCooldownUntil=0,
+		ShieldActive=false, ShieldExpiresAt=0, SpringJumpActive=false, BoostExpiresAt=0,
+		ActiveEffects={}, LastItemUseAt=0, ControlImmuneUntil=0, OriginalAutoRotate=nil }
 end
 function Service.Lock(player: Player, locked: boolean)
-	local data = records[player]; local character = player.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not data or not humanoid then return end
+	local data=records[player]; if not data then return end
+	local Movement=require(script.Parent.MovementModifierService)
+	local humanoid=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	if locked then
-		data.OriginalWalkSpeed = humanoid.WalkSpeed; data.OriginalJumpPower = humanoid.JumpPower; data.OriginalJumpHeight = humanoid.JumpHeight
-		humanoid.WalkSpeed = 0; humanoid.JumpPower = 0; humanoid.JumpHeight = 0
+		if humanoid then data.OriginalAutoRotate=humanoid.AutoRotate; humanoid.AutoRotate=false end
+		Movement.AddModifier(player,"StartLock",0)
 	else
-		humanoid.WalkSpeed = data.OriginalWalkSpeed or 16; humanoid.JumpPower = data.OriginalJumpPower or 50; humanoid.JumpHeight = data.OriginalJumpHeight or 7.2
+		Movement.RemoveModifier(player,"StartLock")
+		if humanoid then humanoid.AutoRotate=if data.OriginalAutoRotate==nil then true else data.OriginalAutoRotate end
 	end
 end
 function Service.Teleport(player: Player, cf: CFrame, timeout: number?): boolean
@@ -62,6 +70,19 @@ function Service.Teleport(player: Player, cf: CFrame, timeout: number?): boolean
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not root or not humanoid then return false end
 	character:PivotTo(cf + Vector3.new(0, 3, 0)); return true
+end
+function Service.TeleportFacing(player:Player, spawn:BasePart, target:BasePart?, timeout:number?):boolean
+	local deadline=os.clock()+(timeout or 8); local character=player.Character
+	while not character and player.Parent==Players and os.clock()<deadline do task.wait(.1); character=player.Character end
+	if not character then return false end
+	local root=character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart",math.max(0,deadline-os.clock()))
+	local humanoid=character:FindFirstChildOfClass("Humanoid"); if not root or not root:IsA("BasePart") or not humanoid then return false end
+	local height=spawn.Position.Y+spawn.Size.Y/2+humanoid.HipHeight+root.Size.Y/2+.5
+	local position=Vector3.new(spawn.Position.X,height,spawn.Position.Z)
+	local targetPosition=if target then Vector3.new(target.Position.X,height,target.Position.Z) else position+Vector3.new(spawn.CFrame.LookVector.X,0,spawn.CFrame.LookVector.Z)*20
+	if (targetPosition-position).Magnitude<.1 then targetPosition=position+Vector3.new(0,0,20) end
+	character:PivotTo(CFrame.lookAt(position,targetPosition)); root.AssemblyLinearVelocity=Vector3.zero; root.AssemblyAngularVelocity=Vector3.zero
+	return true
 end
 function Service.ValidCount(): number
 	local n=0; for player in records do if player.Parent == Players then n += 1 end end; return n

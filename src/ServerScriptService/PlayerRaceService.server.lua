@@ -7,7 +7,8 @@ local remotes=RemoteService.Ensure()
 local function lobby(player: Player, character: Model)
 	if Race.Get(player) then return end
 	local map=workspace:WaitForChild("PartyObbyMap",10); local spawn=map and map:FindFirstChild("LobbySpawn")
-	if spawn and spawn:IsA("BasePart") then character:PivotTo(spawn.CFrame+Vector3.new(0,3,0)) end
+	local direction=map and map:FindFirstChild("StartDirection"); if not direction and map then local checkpoints=map:FindFirstChild("Checkpoints"); direction=checkpoints and checkpoints:FindFirstChild("Checkpoint01") end
+	if spawn and spawn:IsA("BasePart") then Race.TeleportFacing(player,spawn,if direction and direction:IsA("BasePart") then direction else nil,8) end
 end
 local function added(player: Player)
 	player.CharacterAdded:Connect(function(c) task.wait(.15); lobby(player,c) end)
