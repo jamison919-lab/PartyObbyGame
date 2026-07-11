@@ -17,7 +17,11 @@ local starts=Instance.new("Folder"); starts.Name="RaceStartSpawns"; starts.Paren
 for i=1,8 do local col=(i-1)%4; local row=math.floor((i-1)/4); local p=part(string.format("StartSpawn%02d",i),Vector3.new(5,1,5),CFrame.new(-9+col*6,5,-22+row*7),Color3.fromRGB(70,170,255),starts); p.Transparency=.25 end
 local barrier=part("StartBarrier",Vector3.new(27,10,1),CFrame.new(0,9,-8),Color3.fromRGB(255,205,60)); barrier.Transparency=.25; label(barrier,"START")
 local checkpoints=Instance.new("Folder"); checkpoints.Name="Checkpoints"; checkpoints.Parent=map
-for i,z in ipairs({45,110,170}) do local cp=part(string.format("Checkpoint%02d",i),Vector3.new(26,1,5),CFrame.new(0,5,z),Color3.fromRGB(70,235,190),checkpoints,false); cp.Transparency=.15; cp:SetAttribute("CheckpointIndex",i); label(cp,"CHECKPOINT "..i) end
+for i,z in ipairs({45,110,170}) do
+	-- Tall trigger gates reliably touch every avatar body instead of sitting flush with the road.
+	local cp=part(string.format("Checkpoint%02d",i),Vector3.new(26,10,3),CFrame.new(0,9,z),Color3.fromRGB(70,235,190),checkpoints,false)
+	cp.CanTouch=true; cp.Transparency=.65; cp:SetAttribute("CheckpointIndex",i); label(cp,"CHECKPOINT "..i)
+end
 for i,z in ipairs({20,75,140}) do part("JumpPlatform"..i,Vector3.new(9,2,7),CFrame.new((i%2==0 and 6 or -6),7,z),Color3.fromRGB(245,145,70)) end
 local mud=part("MudZone",Vector3.new(25,.4,20),CFrame.new(0,4.8,82),Color3.fromRGB(105,72,48)); mud.Material=Enum.Material.Mud; mud:SetAttribute("SlowMultiplier",.45)
 local movers=Instance.new("Folder"); movers.Name="MovingObstacles"; movers.Parent=map
