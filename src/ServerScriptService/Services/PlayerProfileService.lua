@@ -14,6 +14,7 @@ end
 function Service.GetProfile(player:Player):Profile? local r=records[player];return r and r.Data end
 function Service.Get(player:Player):Profile local deadline=os.clock()+Config.ProfileLoadTimeout;while not records[player] and player.Parent==Players and os.clock()<deadline do task.wait(.1) end;local r=records[player];if not r then error("Profile not loaded for "..player.Name) end;return r.Data end
 function Service.IsProfileLoaded(player:Player):boolean return records[player]~=nil end
+function Service.CountLoaded():number local n=0;for _ in records do n+=1 end;return n end
 function Service.IsMemoryMode(player:Player):boolean local r=records[player];return r~=nil and r.MemoryMode end
 function Service.MarkDirty(player:Player) local r=records[player];if r then r.Dirty=true;r.Revision+=1 end end
 function Service.UpdateValue(player:Player,path:string,value:any):boolean local r=records[player];if not r then return false end;local node,key=locate(r.Data,path);node[key]=value;Service.MarkDirty(player);Service.Changed:Fire(player,Service.GetPublicProfileSnapshot(player));return true end

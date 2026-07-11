@@ -1,0 +1,2 @@
+--!strict
+-- Audio IDs are intentionally zero; clients safely skip unconfigured sounds.

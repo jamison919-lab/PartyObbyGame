@@ -1,0 +1,4 @@
+--!strict
+local Config=require(game:GetService("ReplicatedStorage").Modules.AchievementConfig);local Profiles=require(script.Parent.PlayerProfileService);local remotes=require(script.Parent.RemoteService).Ensure();local Service={}
+function Service.Progress(p:Player,event:string,amount:number?)local profile=Profiles.GetProfile(p);if not profile then return end;for id,d in Config do if d.Event==event and not profile.Achievements.Unlocked[id]then local value=(profile.Achievements.Progress[id]or 0)+(amount or 1);profile.Achievements.Progress[id]=value;if value>=d.Target then profile.Achievements.Unlocked[id]=os.time();Profiles.IncrementValue(p,"Economy.Coins",d.RewardCoins);Profiles.IncrementValue(p,"Economy.LifetimeCoins",d.RewardCoins);remotes.AchievementUnlocked:FireClient(p,{id=id,name=d.DisplayName,reward=d.RewardCoins})end;Profiles.MarkDirty(p)end end end
+return Service

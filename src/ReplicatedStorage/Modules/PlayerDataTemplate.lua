@@ -9,6 +9,9 @@ return {
 	Inventory={OwnedCosmetics={},EquippedCosmetics={Outfit="",HeadAccessory="",BackAccessory="",Trail="",FinishEffect="",ItemSkin="",Emote="",Title=""},Consumables={CasualChiliTicket=0,CasualShieldTicket=0,TowerReviveTicket=0}},
 	Monetization={OwnedGamePasses={},ProcessedReceipts={},TotalRobuxProductsGranted=0},
 	DailyRewards={LastClaimTimestamp=0,CurrentStreak=0,TotalClaims=0},
-	Settings={MusicEnabled=true,SoundEnabled=true,ReducedEffects=false,AutoOpenResults=true},
+	DailyQuests={DateKey=0,QuestIds={},Progress={},Claimed={}},
+	Achievements={Unlocked={},Progress={}},
+	Tutorial={Completed=false,LastStep=0},
+	Settings={MusicEnabled=true,SoundEnabled=true,ReducedEffects=false,ShowTutorialHints=true,ShowRankAbovePlayers=true,AutoOpenResults=true,UIScale="Normal"},
 	Session={JobId="",PlaceId=0,LockedAt=0},
 }

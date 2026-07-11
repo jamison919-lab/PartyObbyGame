@@ -1,0 +1,3 @@
+--!strict
+local Profiles=require(script.Parent.Services.PlayerProfileService);local remotes=require(script.Parent.Services.RemoteService).Ensure();local allowed={MusicEnabled="boolean",SoundEnabled="boolean",ReducedEffects="boolean",ShowTutorialHints="boolean",ShowRankAbovePlayers="boolean",AutoOpenResults="boolean",UIScale="string"};local rate:{[Player]:number}={}
+remotes.UpdateSettings.OnServerEvent:Connect(function(p,key,value)if typeof(key)~="string"or allowed[key]~=typeof(value)or os.clock()-(rate[p]or 0)<.15 then return end;if key=="UIScale"and not table.find({"Small","Normal","Large"},value)then return end;rate[p]=os.clock();Profiles.UpdateValue(p,"Settings."..key,value);remotes.SettingsUpdated:FireClient(p,{key=key,value=value})end)
