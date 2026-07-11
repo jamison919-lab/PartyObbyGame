@@ -14,6 +14,10 @@ local RankService = require(script.Parent.Services.RankService)
 local Profiles = require(script.Parent.Services.PlayerProfileService)
 local Rewards = require(script.Parent.Services.RewardService)
 local Leaderboards = require(script.Parent.Services.GlobalLeaderboardService)
+local MapService = require(script.Parent.Services.MapService)
+local MapVoteService = require(script.Parent.Services.MapVoteService)
+local PuzzleService = require(script.Parent.Services.PuzzleService)
+local MapVoteConfig = require(ReplicatedStorage.Modules.MapVoteConfig)
 
 local timeout = Config.ObjectWaitTimeout
 print("[Round] GameRound started")
@@ -31,10 +35,8 @@ local roundShouldEnd = false
 local activeRoster:{Player}={}
 local activeMatch:any=nil
 
-local function resolveMap(): boolean
-	map = workspace:FindFirstChild("PartyObbyMap") or workspace:WaitForChild("PartyObbyMap", timeout)
-	if not map then warn("[Round] cannot start: PartyObbyMap missing"); return false end
-	if not map:FindFirstChild("LobbySpawn") then warn("[Round] cannot start: LobbySpawn missing"); return false end
+local function resolveMap(runtimeMap:Instance): boolean
+	map = runtimeMap
 	starts = map:FindFirstChild("RaceStartSpawns") or map:WaitForChild("RaceStartSpawns", timeout)
 	if not starts then warn("[Round] cannot start: RaceStartSpawns missing"); return false end
 	checkpoints = map:FindFirstChild("Checkpoints") or map:WaitForChild("Checkpoints", timeout)
@@ -58,7 +60,8 @@ end
 local function rankingPayload()
 	if not map or not starts or not checkpoints then return end
 	local payload={}; local points={}
-	for i=1,Config.CheckpointCount do local cp=checkpoints:FindFirstChild(string.format("Checkpoint%02d",i)); if cp and cp:IsA("BasePart") then points[i]=cp.Position end end
+	local checkpointCount=#checkpoints:GetChildren()
+	for i=1,checkpointCount do local cp=checkpoints:FindFirstChild(string.format("Checkpoint%02d",i)); if cp and cp:IsA("BasePart") then points[i]=cp.Position end end
 	local finish=map:FindFirstChild("FinishLine")
 	if not finish or not finish:IsA("BasePart") then return end
 	for _,data in Race.Ranked() do
@@ -66,11 +69,11 @@ local function rankingPayload()
 			local root=data.Player.Character and data.Player.Character:FindFirstChild("HumanoidRootPart")
 			local spawn=starts:FindFirstChild(string.format("StartSpawn%02d",data.SpawnIndex))
 			local from=if data.CurrentCheckpoint==0 and spawn and spawn:IsA("BasePart") then spawn.Position else points[data.CurrentCheckpoint]
-			local target=if data.CurrentCheckpoint<Config.CheckpointCount then points[data.CurrentCheckpoint+1] else finish.Position
+			local target=if data.CurrentCheckpoint<checkpointCount then points[data.CurrentCheckpoint+1] else finish.Position
 			if root and root:IsA("BasePart") and from and target then data.SegmentProgress=RankingUtils.segmentProgress(root.Position,from,target) end
 		end
 	end
-	for rank,data in Race.Ranked() do table.insert(payload,{userId=data.UserId,displayName=data.Player.DisplayName,rank=rank,checkpoint=data.CurrentCheckpoint,segmentProgress=data.SegmentProgress,isFinished=data.IsFinished,finishPlace=data.FinishPlace,finishTime=data.FinishTime}) end
+	for rank,data in Race.Ranked() do table.insert(payload,{userId=data.UserId,displayName=data.Player.DisplayName,rank=rank,checkpoint=data.CurrentCheckpoint,totalCheckpoints=checkpointCount,segmentProgress=data.SegmentProgress,isFinished=data.IsFinished,finishPlace=data.FinishPlace,finishTime=data.FinishTime}) end
 	for _,player in activeRoster do if player.Parent==Players then rankingRemote:FireClient(player,payload) end end
 end
 Race.ProgressChanged.Event:Connect(rankingPayload)
@@ -94,10 +97,12 @@ local function selectRacers(candidates:{Player}): {Player}
 	return selected
 end
 while true do
-	if not resolveMap() then task.wait(2); continue end
 	activeMatch=QueueService.TakePending()
 	while not activeMatch do Race.SetState(States.WaitingForPlayers,"在大廳選擇遊戲模式",0);task.wait(.25);activeMatch=QueueService.TakePending() end
+	local mapId=MapVoteService.Select(activeMatch.ModeId,activeMatch.Players);if not mapId then warn("[Round] no eligible map");activeMatch=nil;continue end;activeMatch.MapId=mapId
+	local runtimeMap=MapService.LoadMap(activeMatch.MatchId,mapId);if not runtimeMap or not resolveMap(runtimeMap)then warn("[Round] map load failed: "..mapId);activeMatch=nil;continue end
 	activeRoster=activeMatch.Players;for _,player in activeRoster do remoteMap.ModeStateChanged:FireClient(player,{mode=activeMatch.ModeId,inMatch=true,inLobby=false}) end;announce(States.Intermission,"排隊完成",0)
+	local definition=MapService.GetMapDefinition(mapId);for _,player in activeRoster do remoteMap.MapIntro:FireClient(player,definition)end;task.wait(MapVoteConfig.IntroDuration)
 	announce(States.Preparing,"準備起跑",0); print("[Round] preparing racers")
 	ItemService.ClearAll(); Race.RoundNumber+=1; Race.Clear(); local selected=selectRacers(activeRoster);activeRoster=selected
 	if #selected==0 then warn("[Round] cannot start: no valid queued characters"); Race.Clear();activeMatch=nil;task.wait(1);continue end
@@ -106,8 +111,8 @@ while true do
 	print("[Round] countdown started"); timer(States.Countdown,"倒數",Config.CountdownDuration)
 	if barrier and barrier:IsA("BasePart") then barrier.CanCollide=false; barrier.Transparency=.8 end
 	local started=os.clock(); for _,data in Race.All() do data.StartTime=started; data.IsRacing=true end
-	roundShouldEnd=false; announce(States.Racing,"GO!",Config.RoundTime); for player in Race.All() do Race.Lock(player,false) end;for _,player in activeRoster do countdownRemote:FireClient(player,"GO",States.Racing) end; print("[Round] GO - racing started")
-	local deadline=os.clock()+Config.RoundTime; local lastSecond=-1
+	local timeLimit=definition.TimeLimit or Config.RoundTime;roundShouldEnd=false; announce(States.Racing,"GO!",timeLimit); for player in Race.All() do Race.Lock(player,false) end;for _,player in activeRoster do countdownRemote:FireClient(player,"GO",States.Racing) end; print("[Round] GO - racing started")
+	local deadline=os.clock()+timeLimit; local lastSecond=-1
 	while os.clock()<deadline and Race.ValidCount()>0 and not roundShouldEnd and not Race.AllFinished() do
 		local remaining=math.max(0,math.ceil(deadline-os.clock())); if remaining~=lastSecond then Race.SetState(States.Racing,"比賽中",remaining);for _,player in activeRoster do roundRemote:FireClient(player,Race.StatePayload()) end;lastSecond=remaining end
 		rankingPayload(); task.wait(Config.RankingUpdateInterval)
@@ -120,5 +125,5 @@ while true do
 	end
 	if winner then local stats=winner:FindFirstChild("leaderstats"); local wins=stats and stats:FindFirstChild("Wins") :: IntValue?; if wins then wins.Value+=1 end end
 	announce(States.Results,"本局結果",Config.ResultsDuration);for _,player in activeRoster do resultsRemote:FireClient(player,results) end;task.wait(Config.ResultsDuration)
-	announce(States.Resetting,"返回大廳",Config.ResetDuration);ItemService.ClearAll();for _,player in activeRoster do if player.Parent==Players then LobbyService.Return(player) end end;Race.Clear();activeRoster={};activeMatch=nil;if barrier and barrier:IsA("BasePart") then barrier.CanCollide=true;barrier.Transparency=.25 end;task.wait(Config.ResetDuration)
+	announce(States.Resetting,"返回大廳",Config.ResetDuration);ItemService.ClearAll();for _,player in activeRoster do if player.Parent==Players then LobbyService.Return(player) end end;Race.Clear();PuzzleService.Clear(activeMatch.MatchId);MapService.UnloadMap(activeMatch.MatchId);activeRoster={};activeMatch=nil;if barrier and barrier:IsA("BasePart") then barrier.CanCollide=true;barrier.Transparency=.25 end;task.wait(Config.ResetDuration)
 end

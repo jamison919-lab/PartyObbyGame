@@ -11,6 +11,8 @@ local names = {
 	"RequestProfile", "ProfileUpdated", "RequestShopCatalog", "ShopCatalogUpdated",
 	"PurchaseWithCoins", "EquipCosmetic", "UnequipCosmetic", "RequestGamePassPurchase",
 	"RequestProductPurchase", "PurchaseResult", "OpenShop", "LeaderboardUpdated", "ClaimDailyReward",
+	"MapVoteStarted", "SubmitMapVote", "MapVoteUpdated", "MapSelected", "MapIntro",
+	"PuzzleUpdated", "PuzzleMessage",
 }
 
 function RemoteService.Ensure(): {[string]: RemoteEvent}

@@ -44,7 +44,7 @@ playerFinished.OnClientEvent:Connect(function(data)
 	end
 end)
 playerProgressUpdated.OnClientEvent:Connect(function(data) cpText.Text=string.format("檢查點 %d / 3",data.checkpoint or 0) end)
-rankingUpdated.OnClientEvent:Connect(function(rows) local lines={}; for _,r in rows do local me=r.userId==player.UserId; table.insert(lines,string.format("%s%d. %s  CP %d%s",me and "▶ " or "",r.rank,r.displayName,r.checkpoint,r.isFinished and " ✓" or "")); if me then rankText.Text=string.format("名次 %d / %d",r.rank,#rows); cpText.Text=string.format("檢查點 %d / 3",r.checkpoint) end end; list.Text=table.concat(lines,"\n") end)
+rankingUpdated.OnClientEvent:Connect(function(rows) local lines={}; for _,r in rows do local me=r.userId==player.UserId; table.insert(lines,string.format("%s%d. %s  CP %d%s",me and "▶ " or "",r.rank,r.displayName,r.checkpoint,r.isFinished and " ✓" or "")); if me then rankText.Text=string.format("名次 %d / %d",r.rank,#rows); cpText.Text=string.format("檢查點 %d / %d",r.checkpoint,r.totalCheckpoints or 3) end end; list.Text=table.concat(lines,"\n") end)
 resultsUpdated.OnClientEvent:Connect(function(rows) local lines={"本局排名",""}; for _,r in rows do table.insert(lines,string.format("%d. %s — %s",r.rank,r.displayName,r.isFinished and string.format("%.2f 秒",r.finishTime) or "DNF")) end; resultText.Text=table.concat(lines,"\n"); results.Visible=true end)
 clientReady:FireServer()
 print("[RaceUI] requested current round state")

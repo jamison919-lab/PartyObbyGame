@@ -1,0 +1,8 @@
+--!strict
+return table.freeze({
+	VillageRace01={Id="VillageRace01",DisplayName="失控村莊大逃亡",Description="經典平面村莊派對賽道",Mode="Race",Difficulty="Easy",MinimumPlayers=1,MaximumPlayers=8,TimeLimit=180,CheckpointCount=3,SupportsItems=true,SupportsRanked=true,SupportsMapVote=true,HasPuzzles=false,Theme="Village",PreviewColor={90,190,100},SortOrder=1,IsEnabled=true,MapVersion=2},
+	ClocktowerEscape02={Id="ClocktowerEscape02",DisplayName="鐘塔屋頂大逃亡",Description="攀上鐘塔並從屋頂逃往終點",Mode="Race",Difficulty="Medium",MinimumPlayers=1,MaximumPlayers=8,TimeLimit=210,CheckpointCount=4,SupportsItems=true,SupportsRanked=true,SupportsMapVote=true,HasPuzzles=false,Theme="Clocktower",PreviewColor={100,150,220},SortOrder=2,IsEnabled=true,MapVersion=1},
+	VillageWorkshop03={Id="VillageWorkshop03",DisplayName="村長的失控機關工坊",Description="解開快速機關並逃離工坊",Mode="Race",Difficulty="Medium",MinimumPlayers=1,MaximumPlayers=8,TimeLimit=220,CheckpointCount=3,SupportsItems=true,SupportsRanked=false,SupportsMapVote=true,HasPuzzles=true,Theme="Workshop",PreviewColor={220,145,70},SortOrder=3,IsEnabled=true,MapVersion=1},
+	Tower01={Id="Tower01",DisplayName="失控村莊瞭望塔",Description="十層基礎塔",Mode="Tower",Difficulty="Medium",MinimumPlayers=1,MaximumPlayers=1,TimeLimit=300,CheckpointCount=10,SupportsItems=false,SupportsRanked=false,SupportsMapVote=false,HasPuzzles=true,Theme="VillageTower",PreviewColor={150,100,210},SortOrder=4,IsEnabled=true,MapVersion=1},
+	Tower02={Id="Tower02",DisplayName="村長的機關高塔",Description="十二層解謎機關塔",Mode="Tower",Difficulty="Hard",MinimumPlayers=1,MaximumPlayers=1,TimeLimit=420,CheckpointCount=12,SupportsItems=false,SupportsRanked=false,SupportsMapVote=false,HasPuzzles=true,Theme="PuzzleTower",PreviewColor={210,90,100},SortOrder=5,IsEnabled=true,MapVersion=1},
+})

@@ -1,0 +1,13 @@
+--!strict
+local Catalog=require(game:GetService("ReplicatedStorage").Modules.MapCatalog);local Builder=require(script.Parent.MapRuntimeService);local Service={Loaded=Instance.new("BindableEvent")};local loaded:{[string]:Folder}={}
+local function root():Folder local world=workspace:WaitForChild("PartyObbyWorld");local runtime=world:WaitForChild("Runtime");return runtime:WaitForChild("ActiveMatches")::Folder end
+function Service.GetMapDefinition(id:string):any return Catalog[id]end
+function Service.GetEligibleMaps(modeId:string):{any}local out={};for _,d in Catalog do if d.Mode=="Race"and d.IsEnabled and (modeId=="CasualRace"and d.SupportsMapVote or modeId=="RankedRace"and d.SupportsRanked)then table.insert(out,d)end end;return out end
+function Service.ValidateMap(id:string):(boolean,{string})local d=Catalog[id];local errors={};if not d then return false,{"catalog missing"}end;local test=Builder.Build(id);if #test.RaceStartSpawns:GetChildren()<d.MaximumPlayers then table.insert(errors,"insufficient StartSpawn")end;if not test:FindFirstChild("StartDirection")then table.insert(errors,"StartDirection missing")end;if #test.Checkpoints:GetChildren()~=d.CheckpointCount then table.insert(errors,"checkpoint count mismatch")end;for i=1,d.CheckpointCount do local cp=test.Checkpoints:FindFirstChild(string.format("Checkpoint%02d",i));if not cp or cp:GetAttribute("CheckpointIndex")~=i then table.insert(errors,"CheckpointIndex gap at "..i)end end;for _,name in {"FinishLine","KillFloor","TrackSurfaces"}do if not test:FindFirstChild(name)then table.insert(errors,name.." missing")end end;test:Destroy();return #errors==0,errors end
+function Service.LoadMap(matchId:string,mapId:string):Folder?local ok,errors=Service.ValidateMap(mapId);if not ok then warn("[MapService] invalid "..mapId..": "..table.concat(errors,", "));return nil end;Service.UnloadMap(matchId);local map=Builder.Build(mapId);map.Name=matchId;map:SetAttribute("MapId",mapId);map.Parent=root();loaded[matchId]=map;Service.Loaded:Fire(matchId,map);return map end
+function Service.GetLoadedMap(matchId:string):Folder?return loaded[matchId]end
+function Service.GetMapSpawnPoints(matchId:string):Instance?local m=loaded[matchId];return m and m:FindFirstChild("RaceStartSpawns")end
+function Service.GetCheckpoints(matchId:string):Instance?local m=loaded[matchId];return m and m:FindFirstChild("Checkpoints")end
+function Service.GetFinishLine(matchId:string):BasePart?local m=loaded[matchId];local x=m and m:FindFirstChild("FinishLine");return if x and x:IsA("BasePart")then x else nil end
+function Service.UnloadMap(matchId:string)local m=loaded[matchId];loaded[matchId]=nil;if m then m:Destroy()end end
+return Service
