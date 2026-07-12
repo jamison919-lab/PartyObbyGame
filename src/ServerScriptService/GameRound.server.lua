@@ -35,6 +35,7 @@ local checkpoints: Instance? = nil
 local roundShouldEnd = false
 local activeRoster:{Player}={}
 local activeMatch:any=nil
+local worstRanks:{[Player]:number}={}
 
 local function resolveMap(runtimeMap:Instance): boolean
 	map = runtimeMap
@@ -74,7 +75,7 @@ local function rankingPayload()
 			if root and root:IsA("BasePart") and from and target then data.SegmentProgress=RankingUtils.segmentProgress(root.Position,from,target) end
 		end
 	end
-	for rank,data in Race.Ranked() do table.insert(payload,{userId=data.UserId,displayName=data.Player.DisplayName,rank=rank,checkpoint=data.CurrentCheckpoint,totalCheckpoints=checkpointCount,segmentProgress=data.SegmentProgress,isFinished=data.IsFinished,finishPlace=data.FinishPlace,finishTime=data.FinishTime}) end
+	for rank,data in Race.Ranked() do worstRanks[data.Player]=math.max(worstRanks[data.Player]or rank,rank);table.insert(payload,{userId=data.UserId,displayName=data.Player.DisplayName,rank=rank,checkpoint=data.CurrentCheckpoint,totalCheckpoints=checkpointCount,segmentProgress=data.SegmentProgress,isFinished=data.IsFinished,finishPlace=data.FinishPlace,finishTime=data.FinishTime}) end
 	for _,player in activeRoster do if player.Parent==Players then rankingRemote:FireClient(player,payload) end end
 end
 Race.ProgressChanged.Event:Connect(rankingPayload)
@@ -102,6 +103,7 @@ while true do
 	while not activeMatch do Race.SetState(States.WaitingForPlayers,"在大廳選擇遊戲模式",0);task.wait(.25);activeMatch=QueueService.TakePending() end
 	local mapId=MapVoteService.Select(activeMatch.ModeId,activeMatch.Players);if not mapId then warn("[Round] no eligible map");activeMatch=nil;continue end;activeMatch.MapId=mapId
 	local runtimeMap=MapService.LoadMap(activeMatch.MatchId,mapId);if not runtimeMap or not resolveMap(runtimeMap)then warn("[Round] map load failed: "..mapId);activeMatch=nil;continue end
+	PuzzleService.Bind(activeMatch.MatchId,runtimeMap);for _,player in activeMatch.Players do ModeService.Get(player).CurrentMapId=mapId end
 	activeRoster=activeMatch.Players;for _,player in activeRoster do remoteMap.ModeStateChanged:FireClient(player,{mode=activeMatch.ModeId,inMatch=true,inLobby=false}) end;announce(States.Intermission,"排隊完成",0)
 	local definition=MapService.GetMapDefinition(mapId);for _,player in activeRoster do remoteMap.MapIntro:FireClient(player,definition)end;task.wait(MapVoteConfig.IntroDuration)
 	announce(States.Preparing,"準備起跑",0); print("[Round] preparing racers")
@@ -111,7 +113,7 @@ while true do
 	local barrier=map and map:FindFirstChild("StartBarrier"); if barrier and barrier:IsA("BasePart") then barrier.CanCollide=true; barrier.Transparency=.25 end
 	print("[Round] countdown started"); timer(States.Countdown,"倒數",Config.CountdownDuration)
 	if barrier and barrier:IsA("BasePart") then barrier.CanCollide=false; barrier.Transparency=.8 end
-	local started=os.clock(); for _,data in Race.All() do data.StartTime=started; data.IsRacing=true end
+	worstRanks={};local started=os.clock(); for _,data in Race.All() do data.StartTime=started; data.IsRacing=true end
 	local timeLimit=definition.TimeLimit or Config.RoundTime;roundShouldEnd=false; announce(States.Racing,"GO!",timeLimit); for player in Race.All() do Race.Lock(player,false) end;for _,player in activeRoster do countdownRemote:FireClient(player,"GO",States.Racing) end; print("[Round] GO - racing started")
 	local deadline=os.clock()+timeLimit; local lastSecond=-1
 	while os.clock()<deadline and Race.ValidCount()>0 and not roundShouldEnd and not Race.AllFinished() do
@@ -122,7 +124,13 @@ while true do
 	for place,data in Race.Ranked() do
 		data.IsRacing=false; data.IsEliminated=not data.IsFinished;local result={rank=place,displayName=data.Player.DisplayName,finishTime=data.FinishTime,isFinished=data.IsFinished,checkpoint=data.CurrentCheckpoint,dnf=not data.IsFinished};if activeMatch.ModeId=="RankedRace" then local rank=RankService.Apply(data.Player,place,#activeRoster,data.IsFinished);result.rankChange=rank;remoteMap.RankUpdated:FireClient(data.Player,rank);print(string.format("[Rank] %s gained %d points",data.Player.Name,rank.delta)) end;table.insert(results,result)
 		Profiles.IncrementValue(data.Player,"General.RoundsPlayed",1);if activeMatch.ModeId=="CasualRace" then Profiles.IncrementValue(data.Player,"CasualRace.Matches",1) end;if data.FinishPlace==1 then Profiles.IncrementValue(data.Player,"General.Wins",1);if activeMatch.ModeId=="CasualRace" then Profiles.IncrementValue(data.Player,"CasualRace.Wins",1) end end;if data.FinishTime then local ms=math.floor(data.FinishTime*1000);local profile=Profiles.GetProfile(data.Player);if profile and (profile.CasualRace.BestTimeMilliseconds==0 or ms<profile.CasualRace.BestTimeMilliseconds) then Profiles.UpdateValue(data.Player,"CasualRace.BestTimeMilliseconds",ms) end end;result.coinsEarned=Rewards.Race(data.Player,activeMatch.MatchId,activeMatch.ModeId,place,data.IsFinished);local profile=Profiles.GetProfile(data.Player);if profile then Leaderboards.Update(data.Player,"Wins",profile.General.Wins);if activeMatch.ModeId=="RankedRace" then Leaderboards.Update(data.Player,"Rank",profile.RankedRace.RankPoints) end end
-		if data.IsFinished then GameplayEvents.Event:Fire(data.Player,"RaceComplete",1);if activeMatch.ModeId=="CasualRace"then GameplayEvents.Event:Fire(data.Player,"CasualComplete",1)end;if place<=3 then GameplayEvents.Event:Fire(data.Player,"TopThree",1)end;if place==1 then GameplayEvents.Event:Fire(data.Player,"RaceWin",1);if activeMatch.ModeId=="RankedRace"then GameplayEvents.Event:Fire(data.Player,"RankedWin",1)end end;if activeMatch.MapId=="VillageWorkshop03"then GameplayEvents.Event:Fire(data.Player,"PuzzleMapComplete",1)end end
+		if data.IsFinished then
+			GameplayEvents.Event:Fire(data.Player,"RaceComplete",1);if activeMatch.ModeId=="CasualRace"then GameplayEvents.Event:Fire(data.Player,"CasualComplete",1)end;if place<=3 then GameplayEvents.Event:Fire(data.Player,"TopThree",1)end
+			if data.ActiveEffects.WasOffTrack then GameplayEvents.Event:Fire(data.Player,"OffTrackFinish",1)end
+			if activeMatch.MapId=="ClocktowerEscape02"then GameplayEvents.Event:Fire(data.Player,"ClocktowerComplete",1)elseif activeMatch.MapId=="VillageWorkshop03"then GameplayEvents.Event:Fire(data.Player,"PuzzleMapComplete",1)end
+			local completedProfile=Profiles.GetProfile(data.Player);if completedProfile then completedProfile.CasualRace.CompletedMaps[activeMatch.MapId]=true;Profiles.MarkDirty(data.Player);local all=true;for _,mapDefinition in require(ReplicatedStorage.Modules.MapCatalog)do if mapDefinition.IsEnabled and mapDefinition.Mode=="Race"and not completedProfile.CasualRace.CompletedMaps[mapDefinition.Id]then all=false;break end end;if all then GameplayEvents.Event:Fire(data.Player,"AllRaceMaps",1)end end
+			if place==1 then GameplayEvents.Event:Fire(data.Player,"RaceWin",1);if worstRanks[data.Player]==#activeRoster and #activeRoster>=2 then GameplayEvents.Event:Fire(data.Player,"ComebackWin",1)end;if activeMatch.ModeId=="RankedRace"then GameplayEvents.Event:Fire(data.Player,"RankedWin",1);local rankedProfile=Profiles.GetProfile(data.Player);if rankedProfile and rankedProfile.RankedRace.WinStreak>=3 then GameplayEvents.Event:Fire(data.Player,"RankedStreak3",1)end end end
+		end
 		local stats=data.Player:FindFirstChild("leaderstats"); if stats then local rounds=stats:FindFirstChild("RoundsPlayed") :: IntValue?; if rounds then rounds.Value+=1 end; if data.IsFinished and data.FinishPlace==1 then winner=data.Player end; local best=stats:FindFirstChild("BestTime") :: NumberValue?; if best and data.FinishTime and (best.Value==0 or data.FinishTime<best.Value) then best.Value=data.FinishTime end end
 	end
 	if winner then local stats=winner:FindFirstChild("leaderstats"); local wins=stats and stats:FindFirstChild("Wins") :: IntValue?; if wins then wins.Value+=1 end end

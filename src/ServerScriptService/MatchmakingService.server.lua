@@ -11,7 +11,7 @@ local function beginCountdown(id:string)
 end
 local function select(p:Player,id:string)
 	if os.clock()-(rate[p] or 0)<.5 then return end;rate[p]=os.clock();local config=Modes[id];if not config then return end;print(string.format("[Mode] %s selected %s",p.Name,id))
-	if id=="SoloTower" then Queue.Leave(p);Tower.Start(p);return end
+	if config.IsSolo then Queue.Leave(p);Tower.Start(p,config.MapPool[1]);return end
 	if Queue.Join(p,id) then print(string.format("[Queue] %s joined %s %d/%d",p.Name,id,Queue.Count(id),config.MaximumPlayers));broadcast(id,nil);if Queue.Count(id)>=config.MinimumPlayers then beginCountdown(id) end end
 end
 remotes.SelectMode.OnServerEvent:Connect(select);remotes.LeaveQueue.OnServerEvent:Connect(function(p) Queue.Leave(p);remotes.ModeStateChanged:FireClient(p,{inLobby=true}) end)
