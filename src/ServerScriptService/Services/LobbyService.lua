@@ -3,9 +3,10 @@ local Race=require(script.Parent.RaceService);local Mode=require(script.Parent.M
 local Service={}
 function Service.Return(p:Player)
 	Queue.Leave(p);Tower.Leave(p);Race.Remove(p);Items.ClearPlayer(p);Movement.ClearTemporaryModifiers(p);Mode.ResetToLobby(p)
-	local world=workspace:FindFirstChild("PartyObbyWorld") or workspace:WaitForChild("PartyObbyWorld",10);local lobby=world and (world:FindFirstChild("MainLobby") or world:WaitForChild("MainLobby",5));local spawn=lobby and lobby:FindFirstChild("LobbySpawn");local fountain=lobby and lobby:FindFirstChild("VillageFountain")
-	if spawn and spawn:IsA("BasePart") then Race.TeleportFacing(p,spawn,if fountain and fountain:IsA("BasePart") then fountain else nil,8) end
-	remotes.ModeStateChanged:FireClient(p,{inLobby=true,inMatch=false,inTower=false});remotes.PlayerProgressUpdated:FireClient(p,{checkpoint=0})
+	local world=workspace:FindFirstChild("PartyObbyWorld") or workspace:WaitForChild("PartyObbyWorld",10);local lobby=world and (world:FindFirstChild("MainLobby") or world:WaitForChild("MainLobby",5));local spawn=lobby and lobby:FindFirstChild("LobbySpawn");local facing=lobby and lobby:FindFirstChild("LobbyFacingTarget")
+	if spawn and spawn:IsA("BasePart") then Race.TeleportFacing(p,spawn,if facing and facing:IsA("BasePart") then facing else nil,8) end
+	remotes.ModeStateChanged:FireClient(p,Mode.Payload(p,"Lobby"));remotes.PlayerProgressUpdated:FireClient(p,{checkpoint=0})
 	print(string.format("[Lobby] %s returned to main lobby",p.Name))
 end
+function Service.Place(p:Player):boolean local world=workspace:FindFirstChild("PartyObbyWorld");local lobby=world and world:FindFirstChild("MainLobby");local spawn=lobby and lobby:FindFirstChild("LobbySpawn");local facing=lobby and lobby:FindFirstChild("LobbyFacingTarget");if spawn and spawn:IsA("BasePart")then return Race.TeleportFacing(p,spawn,if facing and facing:IsA("BasePart")then facing else nil,8)end;return false end
 return Service

@@ -6,7 +6,7 @@ local names = {
 	"RoundStateChanged", "CountdownUpdated", "RankingUpdated",
 	"PlayerFinished", "ResultsUpdated", "ClientReady", "PlayerProgressUpdated",
 	"ItemGranted", "ItemUsed", "ItemEffect", "UseItem", "TrackPenaltyUpdated", "ItemMessage",
-	"SelectMode", "LeaveQueue", "QueueUpdated", "ModeStateChanged", "ReturnToLobby",
+	"SelectMode", "LeaveQueue", "QueueUpdated", "ModeStateChanged", "RequestModeState", "ReturnToLobby",
 	"TowerProgressUpdated", "RankUpdated", "OpenMenu",
 	"RequestProfile", "ProfileUpdated", "RequestShopCatalog", "ShopCatalogUpdated",
 	"PurchaseWithCoins", "EquipCosmetic", "UnequipCosmetic", "RequestGamePassPurchase",

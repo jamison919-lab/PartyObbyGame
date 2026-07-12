@@ -81,7 +81,7 @@ function Service.TeleportFacing(player:Player, spawn:BasePart, target:BasePart?,
 	local position=Vector3.new(spawn.Position.X,height,spawn.Position.Z)
 	local targetPosition=if target then Vector3.new(target.Position.X,height,target.Position.Z) else position+Vector3.new(spawn.CFrame.LookVector.X,0,spawn.CFrame.LookVector.Z)*20
 	if (targetPosition-position).Magnitude<.1 then targetPosition=position+Vector3.new(0,0,20) end
-	character:PivotTo(CFrame.lookAt(position,targetPosition)); root.AssemblyLinearVelocity=Vector3.zero; root.AssemblyAngularVelocity=Vector3.zero
+	character:PivotTo(CFrame.lookAt(position,targetPosition)); root.AssemblyLinearVelocity=Vector3.zero; root.AssemblyAngularVelocity=Vector3.zero;humanoid.AutoRotate=true
 	return true
 end
 function Service.ValidCount(): number

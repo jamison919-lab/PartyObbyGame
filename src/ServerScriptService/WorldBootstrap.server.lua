@@ -17,6 +17,7 @@ end
 local function label(p:BasePart,text:string) local g=Instance.new("BillboardGui");g.Size=UDim2.fromScale(7,1.5);g.StudsOffset=Vector3.new(0,4,0);g.AlwaysOnTop=true;g.Parent=p;local t=Instance.new("TextLabel");t.Size=UDim2.fromScale(1,1);t.BackgroundTransparency=1;t.Text=text;t.TextScaled=true;t.TextColor3=Color3.new(1,1,1);t.TextStrokeTransparency=.2;t.Font=Enum.Font.GothamBold;t.Parent=g end
 local center=Vector3.new(-300,5,0);local plaza=part("Plaza",Vector3.new(100,1,100),center,Color3.fromRGB(190,170,130));plaza.Material=Enum.Material.Cobblestone
 local spawn=part("LobbySpawn",Vector3.new(12,1,12),center+Vector3.new(0,1,-30),Color3.fromRGB(75,210,130));label(spawn,"爆笑村莊廣場")
+local facingTarget=part("LobbyFacingTarget",Vector3.new(1,1,1),center+Vector3.new(0,1,0),Color3.new(1,1,1),lobby,false);facingTarget.CanTouch=false;facingTarget.CanQuery=true;facingTarget.Transparency=1;spawn.CFrame=CFrame.lookAt(spawn.Position,Vector3.new(facingTarget.Position.X,spawn.Position.Y,facingTarget.Position.Z))
 local receive=part("ReturnReceiver",Vector3.new(18,1,12),center+Vector3.new(0,1,-40),Color3.fromRGB(90,180,255));receive.Transparency=.4
 local decor=Instance.new("Folder");decor.Name="Decorations";decor.Parent=lobby
 local fountain=part("VillageFountain",Vector3.new(14,3,14),center+Vector3.new(0,2,0),Color3.fromRGB(80,175,240),decor);fountain.Shape=Enum.PartType.Cylinder
