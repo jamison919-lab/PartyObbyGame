@@ -14,6 +14,7 @@ task.defer(function()
 	local raceMaps=0;for id,definition in Catalog do if definition.IsEnabled and definition.Mode=="Race"then raceMaps+=1;test("MapValidation "..id,function()local ok,errors=Maps.ValidateMap(id);return ok,table.concat(errors,", ")end)end end
 	test("Three race maps",function()return raceMaps>=3,"found "..raceMaps end)
 	for id in TowerConfig do test("MapValidation "..id,function()local ok,errors=Maps.ValidateTower(id);return ok,table.concat(errors,", ")end)end
+	local PathValidator=require(script.Parent.Services.TowerPathValidator);for id in TowerConfig do test("TowerPath "..id,function()local towerMaps=world and world:FindFirstChild("TowerMaps");local tower=towerMaps and towerMaps:FindFirstChild(id);if not tower then return false,"tower missing"end;local results=PathValidator.Validate(tower);PathValidator.Print(results);return not PathValidator.HasFailures(results),"jump path validation failed"end)end
 	for name,module in {QuestConfig=require(ReplicatedStorage.Modules.QuestConfig),AchievementConfig=require(ReplicatedStorage.Modules.AchievementConfig)}do test(name.." unique ids",function()return uniqueIds(module)end)end
 	test("ShopConfig unique ids",function()return uniqueIds(require(ReplicatedStorage.Modules.ShopConfig).Items)end)
 	test("Rank thresholds",function()local last=-1;for _,tier in require(ReplicatedStorage.Modules.RankConfig).Tiers do if tier.MinimumPoints<=last then return false,"threshold order"end;last=tier.MinimumPoints end;return true end)

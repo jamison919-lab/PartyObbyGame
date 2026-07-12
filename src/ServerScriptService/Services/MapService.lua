@@ -19,9 +19,11 @@ end
 function Service.ValidateTower(id:string):(boolean,{string})
 	local errors={};local definition=TowerConfig[id];if not definition then return false,{"tower config missing"}end
 	local world=workspace:WaitForChild("PartyObbyWorld",10);local maps=world and world:WaitForChild("TowerMaps",10);local tower=maps and maps:WaitForChild(id,10);if not tower then return false,{"tower map missing"}end;tower:WaitForChild("ReturnToLobby",10)
+	if id=="Tower02"then local deadline=os.clock()+5;while not tower:GetAttribute("PathValidationReady")and os.clock()<deadline do task.wait()end;if not tower:GetAttribute("PathValidationReady")then return false,{"tower path bootstrap not ready"}end end
 	local floors=tower:FindFirstChild("Floors");if not tower:FindFirstChild("TowerStart")then table.insert(errors,"TowerStart missing")end;if not floors or #floors:GetChildren()~=definition.FloorCount then table.insert(errors,"floor count mismatch")end
 	for i=1,definition.FloorCount do local floor=floors and floors:FindFirstChild(string.format("Floor%02d",i));if not floor or floor:GetAttribute("FloorIndex")~=i or floor:GetAttribute("FloorCheckpoint")~=true then table.insert(errors,"FloorIndex gap at "..i)end end
 	for _,name in {"TowerFinish","KillFloor","ReturnToLobby"}do if not tower:FindFirstChild(name)then table.insert(errors,name.." missing")end end
+	local pathValidator=require(script.Parent.TowerPathValidator);for _,result in pathValidator.Validate(tower)do if result.Level=="FAIL"then table.insert(errors,result.Message)end end
 	return #errors==0,errors
 end
 function Service.ValidateMap(id:string):(boolean,{string})local definition=Catalog[id];if not definition then return false,{"catalog missing"}end;if definition.Mode=="Tower"then return Service.ValidateTower(id)end;return validateRace(id,definition)end
