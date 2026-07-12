@@ -7,4 +7,4 @@ local cosmetics={
 	BananaSkin={Id="BananaSkin",DisplayName="金色香蕉皮",Description="只改變香蕉皮外觀",Category="CoinCosmetics",Slot="ItemSkin",CurrencyType="Coins",Price=900,ProductId=0,GamePassId=0,Rarity="Epic",IsEnabled=true,IsFeatured=false,SortOrder=5,PreviewType="Effect",RankedAllowed=true,GrantType="Cosmetic"},
 	VillageChampionTitle={Id="VillageChampionTitle",DisplayName="村莊逃亡王",Description="顯示專屬稱號",Category="CoinCosmetics",Slot="Title",CurrencyType="Coins",Price=1500,ProductId=0,GamePassId=0,Rarity="Legendary",IsEnabled=true,IsFeatured=true,SortOrder=6,PreviewType="Text",RankedAllowed=true,GrantType="Cosmetic"},
 }
-return table.freeze({Categories={"Featured","CoinCosmetics","GamePasses","DeveloperProducts","Consumables","Owned"},Cosmetics=cosmetics})
+return table.freeze({Categories={"Featured","CoinCosmetics","GamePasses","DeveloperProducts","Consumables","Owned"},Items=cosmetics,Cosmetics=cosmetics})

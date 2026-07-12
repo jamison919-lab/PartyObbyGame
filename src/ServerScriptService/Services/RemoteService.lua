@@ -14,7 +14,7 @@ local names = {
 	"MapVoteStarted", "SubmitMapVote", "MapVoteUpdated", "MapSelected", "MapIntro",
 	"PuzzleUpdated", "PuzzleMessage",
 	"TutorialState", "CompleteTutorial", "RestartTutorial", "QuestUpdated", "ClaimQuest",
-	"AchievementUnlocked", "GameplayFeedback", "UpdateSettings", "SettingsUpdated", "DiagnosticsUpdated",
+	"AchievementUnlocked", "GameplayFeedback", "UpdateSettings", "RequestSettings", "SettingsUpdated", "DiagnosticsUpdated",
 }
 
 function RemoteService.Ensure(): {[string]: RemoteEvent}
