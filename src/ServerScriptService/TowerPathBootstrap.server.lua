@@ -5,6 +5,7 @@ local towerMaps=world:WaitForChild("TowerMaps")
 local PLATFORM_HEIGHT=4
 local FLOOR_RISE=12
 local ANGLE_STEP=math.rad(45)
+local obstacleTypes={Tower01={"BlockSteps","MovingBlocks","Spinner","Disappear","WindBridge","PushBox","SequenceButtons","MovingWallMaze","Elevator","FinalCombo"},Tower02={"TutorialSteps","AlternatingBlocks","MovingPlatform","RotatingBlades","Disappear","ColorSequence","PushBox","Maze","Elevator","SafeLightWall","Pendulum","FinalSpiral"}}
 
 local function resizeAt(platform:BasePart,size:Vector3,position:Vector3,platformType:string,floorIndex:number)
 	platform.Size=size;platform.Position=position;platform.Material=if platformType=="Checkpoint"then Enum.Material.Cobblestone else Enum.Material.WoodPlanks
@@ -26,6 +27,7 @@ local function rebuild(tower:Folder,floorCount:number,radius:number,prefix:strin
 	for floorIndex=1,floorCount do
 		local angle=(floorIndex-1)*ANGLE_STEP;local target=point(base,radius,angle,base.Y+floorIndex*FLOOR_RISE);local floor=floors:WaitForChild(string.format("Floor%02d",floorIndex))::BasePart
 		local floorWidth=if floorIndex==1 then 10 else if floorIndex==2 then 14 else 12;resizeAt(floor,Vector3.new(floorWidth,PLATFORM_HEIGHT,floorWidth),target,"Checkpoint",floorIndex)
+		floor:SetAttribute("FloorCheckpoint",true);floor:SetAttribute("ObstacleType",obstacleTypes[tower.Name][floorIndex]);floor:SetAttribute("DifficultyStep",floorIndex)
 		local nodes=floor:FindFirstChild("JumpNodes");if nodes then nodes:Destroy()end;nodes=Instance.new("Folder");nodes.Name="JumpNodes";nodes.Parent=floor
 		for step=1,2 do
 			local platform=tower:WaitForChild(string.format(prefix,floorIndex,step))::BasePart;local alpha=step/3;local position=previousPosition:Lerp(target,alpha)

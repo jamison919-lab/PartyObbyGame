@@ -12,7 +12,7 @@ local function validateRace(id:string,definition:any):(boolean,{string})
 	if not starts or #starts:GetChildren()<definition.MaximumPlayers then table.insert(errors,"insufficient StartSpawn")end;if not test:FindFirstChild("StartDirection")then table.insert(errors,"StartDirection missing")end
 	if not checkpoints or #checkpoints:GetChildren()~=definition.CheckpointCount then table.insert(errors,"checkpoint count mismatch")end
 	for i=1,definition.CheckpointCount do local cp=checkpoints and checkpoints:FindFirstChild(string.format("Checkpoint%02d",i));if not cp or cp:GetAttribute("CheckpointIndex")~=i then table.insert(errors,"CheckpointIndex gap at "..i)end end
-	for _,name in {"FinishLine","KillFloor","TrackSurfaces","OffTrackZones"}do if not test:FindFirstChild(name)then table.insert(errors,name.." missing")end end
+	for _,name in {"FinishLine","KillFloor","TrackSurfaces","OffTrackZones","ItemBoxes"}do if not test:FindFirstChild(name)then table.insert(errors,name.." missing")end end;if not test:FindFirstChild("ItemBoxes")or #test.ItemBoxes:GetChildren()==0 then table.insert(errors,"reachable ItemBoxes missing")end;if test:GetAttribute("RuntimeCleanupReady")~=true then table.insert(errors,"runtime cleanup hook missing")end
 	local zones=test:FindFirstChild("OffTrackZones");if zones then for _,zone in zones:GetChildren()do if not zone:IsA("BasePart")or zone:GetAttribute("OffTrackZone")~=true or type(zone:GetAttribute("PenaltyDurationMin"))~="number"then table.insert(errors,"invalid OffTrackZone: "..zone.Name)end end end
 	test:Destroy();return #errors==0,errors
 end

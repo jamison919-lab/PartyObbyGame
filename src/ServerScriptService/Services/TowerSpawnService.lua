@@ -56,7 +56,7 @@ function Service.Teleport(player: Player, tower: Instance, support: BasePart): b
 	if moved > 0 then print(string.format("[Tower] moved spawn upward by %d studs", moved)) end
 	local character = player.Character;local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not character or not root or not root:IsA("BasePart") then return false end
-	character:PivotTo(cf);root.AssemblyLinearVelocity=Vector3.zero;root.AssemblyAngularVelocity=Vector3.zero
+	character:PivotTo(cf);root.AssemblyLinearVelocity=Vector3.zero;root.AssemblyAngularVelocity=Vector3.zero;local force=character:FindFirstChildOfClass("ForceField")or Instance.new("ForceField");force.Visible=false;force.Parent=character;task.delay(1.5,function()if force.Parent==character then force:Destroy()end end)
 	return true
 end
 
