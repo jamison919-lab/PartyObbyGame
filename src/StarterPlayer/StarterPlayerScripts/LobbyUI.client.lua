@@ -1,5 +1,5 @@
 --!strict
-local Players=game:GetService("Players");local ReplicatedStorage=game:GetService("ReplicatedStorage");local player=Players.LocalPlayer;local Controller=require(script.Parent.UIStateController)
+local Players=game:GetService("Players");local ReplicatedStorage=game:GetService("ReplicatedStorage");local player=Players.LocalPlayer;print("[LobbyUI] client started");local Controller=require(script.Parent.UIStateController);print("[LobbyUI] UI state controller ready")
 local old=player.PlayerGui:FindFirstChild("LobbyGui");if old then old:Destroy()end
 local gui=Instance.new("ScreenGui");gui.Name="LobbyGui";gui.ResetOnSpawn=false;gui.IgnoreGuiInset=false;gui.Parent=player.PlayerGui
 local container=Instance.new("Frame");container.Name="LobbyMenuContainer";container.AnchorPoint=Vector2.new(0,.5);container.Position=UDim2.fromScale(.02,.55);container.Size=UDim2.fromScale(.14,.58);container.BackgroundColor3=Color3.fromRGB(24,31,46);container.BackgroundTransparency=.18;container.Parent=gui;Instance.new("UICorner",container).CornerRadius=UDim.new(.06,0)
