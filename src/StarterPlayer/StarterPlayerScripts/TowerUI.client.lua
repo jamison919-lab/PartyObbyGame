@@ -1,10 +1,10 @@
 --!strict
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
-local GuiService=game:GetService("GuiService")
 local ContextActionService=game:GetService("ContextActionService")
 local RunService=game:GetService("RunService")
 local Controller=require(script.Parent.UIStateController)
+local InputFocus=require(script.Parent.UIInputFocusController)
 local player=Players.LocalPlayer
 print("[TowerUI] client started")
 local folder=ReplicatedStorage:WaitForChild("Remotes",10)
@@ -35,6 +35,6 @@ progress.OnClientEvent:Connect(function(data)
 end)
 achievementRemote.OnClientEvent:Connect(function(data)if Controller.GetState()=="TowerResults"then message.Text=message.Text.."\n新成就："..tostring(data.name or data.id)end end)
 questRemote.OnClientEvent:Connect(function(data)if Controller.GetState()~="TowerResults"or type(data)~="table"then return end;for _,quest in data.quests or{}do if quest.progress>=quest.target and not quest.claimed then message.Text=message.Text.."\n任務完成："..quest.name;break end end end)
-gui:GetPropertyChangedSignal("Enabled"):Connect(function()if gui.Enabled then GuiService.SelectedObject=button else running=false;GuiService.SelectedObject=nil end end)
-ContextActionService:BindAction("TowerReturn",function(_,inputState)if inputState==Enum.UserInputState.Begin and gui.Enabled then back:FireServer();return Enum.ContextActionResult.Sink end;return Enum.ContextActionResult.Pass end,false,Enum.KeyCode.ButtonB)
+local function towerReturn(_,inputState)if inputState==Enum.UserInputState.Begin and gui.Enabled then back:FireServer();return Enum.ContextActionResult.Sink end;return Enum.ContextActionResult.Pass end
+gui:GetPropertyChangedSignal("Enabled"):Connect(function()InputFocus.ClearSelection();if gui.Enabled then ContextActionService:BindAction("TowerReturn",towerReturn,false,Enum.KeyCode.ButtonB)else running=false;ContextActionService:UnbindAction("TowerReturn")end end)
 print("[TowerUI] state initialized")
