@@ -36,17 +36,23 @@ local function validateJump(towerId: string, floorName: string, order: number, f
 	return {Level = "PASS", Message = prefix}
 end
 
-local function blockingPart(cf:CFrame,size:Vector3,excluded:{Instance}):BasePart?
-	local params=OverlapParams.new();params.FilterType=Enum.RaycastFilterType.Exclude;params.FilterDescendantsInstances=excluded
-	for _,part in workspace:GetPartBoundsInBox(cf,size,params)do if part.CanCollide then return part end end
+local function shouldIgnoreClearancePart(part:BasePart,source:BasePart,target:BasePart):boolean
+	if part==source or part==target or not part.CanCollide or not part.CanQuery then return true end
+	if part:GetAttribute("IgnoreTowerPathValidation")==true or part:GetAttribute("DecorativeObject")==true or part:GetAttribute("JumpOrder")~=nil then return true end
+	if part:FindFirstAncestor("ClearanceDiagnostics")then return true end
+	return false
+end
+local function blockingPart(cf:CFrame,size:Vector3,source:BasePart,target:BasePart):BasePart?
+	local params=OverlapParams.new();params.FilterType=Enum.RaycastFilterType.Exclude;params.FilterDescendantsInstances={source,target}
+	for _,part in workspace:GetPartBoundsInBox(cf,size,params)do if not shouldIgnoreClearancePart(part,source,target)then return part end end
 	return nil
 end
 
 local function validateClearance(tower:Instance,floorName:string,order:number,source:BasePart,target:BasePart):Result?
 	local sourceTop=source.Position+Vector3.new(0,source.Size.Y/2,0);local targetTop=target.Position+Vector3.new(0,target.Size.Y/2,0);local prefix=string.format("%s %s jump %d",tower.Name,floorName,order)
-	local overhead=blockingPart(CFrame.new(sourceTop+Vector3.new(0,HEADROOM/2,0)),Vector3.new(4,HEADROOM,4),{source,target})
-	if overhead then local bottom=overhead.Position.Y-overhead.Size.Y/2;return{Level="FAIL",Message=string.format("%s headroom %.1f, requires %d; blocked by %s",prefix,bottom-sourceTop.Y,HEADROOM,overhead.Name)}end
-	for sample=1,7 do local alpha=sample/8;local position=sourceTop:Lerp(targetTop,alpha)+Vector3.new(0,4*ARC_HEIGHT*alpha*(1-alpha)+2.5,0);local blocker=blockingPart(CFrame.new(position),Vector3.new(3,5,3),{source,target});if blocker then return{Level="FAIL",Message=string.format("%s blocked by %s at arc sample %d",prefix,blocker.Name,sample)}end end
+	local overhead=blockingPart(CFrame.new(sourceTop+Vector3.new(0,HEADROOM/2,0)),Vector3.new(4,HEADROOM,4),source,target)
+	if overhead then local bottom=overhead.Position.Y-overhead.Size.Y/2;return{Level="FAIL",Message=string.format("%s headroom %.1f, requires %d; blocked by %s",prefix,bottom-sourceTop.Y,HEADROOM,overhead:GetFullName())}end
+	for sample=1,7 do local alpha=sample/8;local position=sourceTop:Lerp(targetTop,alpha)+Vector3.new(0,4*ARC_HEIGHT*alpha*(1-alpha)+2.5,0);local blocker=blockingPart(CFrame.new(position),Vector3.new(3,5,3),source,target);if blocker then return{Level="FAIL",Message=string.format("%s blocked by %s at arc sample %d",prefix,blocker:GetFullName(),sample)}end end
 	return nil
 end
 
@@ -92,6 +98,7 @@ function Service.Validate(tower: Instance): {Result}
 			previous = floor
 		end
 	end
+	local finishPlatform=tower:FindFirstChild("FinishPlatform");if finishPlatform and finishPlatform:IsA("BasePart")then table.insert(results,validateJump(tower.Name,"Finish",1,previous,finishPlatform));local finishClearance=validateClearance(tower,"Finish",1,previous,finishPlatform);if finishClearance then clearanceFailed=true;table.insert(results,finishClearance)end;table.insert(platforms,finishPlatform)else table.insert(results,{Level="FAIL",Message=tower.Name.." FinishPlatform missing"})end
 	if not clearanceFailed then table.insert(results,{Level="PASS",Message=tower.Name.." jump clearance"})end
 	local overlapFailed=false;for i=1,#platforms do for j=i+1,#platforms do if platforms[i]~=platforms[j]and overlaps(platforms[i],platforms[j])then overlapFailed=true;table.insert(results,{Level="FAIL",Message=string.format("%s platform overlap %s / %s",tower.Name,platforms[i].Name,platforms[j].Name)})end end end
 	if not overlapFailed then table.insert(results,{Level="PASS",Message=tower.Name.." no platform overlap"})end
